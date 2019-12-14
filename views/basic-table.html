@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head><title></title>
+<meta charset="utf-8">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="bootstrap/css/bootstrap-reboot.min.css"/>
+
+<body>
+    <table class="table table-dark">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">First</th>
+                <th scope="col">Last</th>
+                <th scope="col">Handle</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% set index = 1 %}
+            {% for element in elements %}
+                <tr>
+                    <th scope="row">{{index}}</th>
+                    
+                    <td>{{element.Name}}</td>
+                    <td>{{element.Rank}}</td>
+
+                    <td>Otto</td>
+                </tr>
+                {% set index = index + 1%}
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
