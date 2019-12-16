@@ -42,6 +42,7 @@ Il y a un onglet requête standard et un autre pour les requêtes administarteur
   - retour du template et des résultats de la requête vers le client
 
 ### Templates
+
 - [page d'acceuil](home.html)\
   Template prédéfini qui a été retravaillé afin de correspondre aux besoins du projet.
 

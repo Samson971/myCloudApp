@@ -69,7 +69,7 @@ app.get('/request1', (req, res) => {
 })
 
 
-app.get('/get', (req, res) => {
+app.get('/request2', (req, res) => {
     var fieldsToRender = ['Name', 'Rank']
     mongoClient.connect(uri,
         { useUnifiedTopology: true },
@@ -121,7 +121,7 @@ app.get('/test', (req, res) => {
 });
 
 
-app.get('/request/2', (req, res) => {
+app.get('/request-next', (req, res) => {
     var fieldsToRender = ['Name', 'Rank', 'Firstname', 'Lastname']
     mongoClient.connect(uri,
         { useUnifiedTopology: true },
