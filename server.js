@@ -10,6 +10,9 @@ const DATABASE = 'imdb';
 const COLLECTION = 'imdb_denormalized';
 
 //uri of the mongo server or router
+//for sharded cluster 
+//var remote_uri = 'mongodb://administrateur:V8eOFR%_@devincimdb1011.westeurope.cloudapp.azure.com:30000'
+
 var uri = "mongodb://localhost:27017";
 
 // App
@@ -33,7 +36,8 @@ app.get('/', (req, res) => {
     return res.render('home');
 });
 
-app.get('/test', (req, res) => {
+app.get('/request1', (req, res) => {
+    var fieldsToRender = ['_id', 'nb'];
     mongoClient.connect(uri,
         { useUnifiedTopology: true },
         (err, client) => {
@@ -44,21 +48,29 @@ app.get('/test', (req, res) => {
             }
             const db = client.db(DATABASE);
             const collection = db.collection(COLLECTION);
-            collection.countDocuments((error, count) => {
-                if (error) {
-                    console.error(err);
-                    res.send(err);
-                    return;
-                }
-                res.send(count.toString() + '\n');
-            });
+
+            //exec 
+            const opSort = { $sort: { "Rank": -1 } };
+            const opLimit = { $limit: 2000 };
+            const opMatch = { $match: { "Genres": { $ne: "Unknown" } } };
+            const opUnwind = { $unwind: "$Genres" };
+            const oGroup = { $group: { _id: "$Genres", "nb": { $sum: 1 } } };
+            const opSort2 = { $sort: { "nb": -1 } };
+            collection.aggregate([opUnwind, opMatch, opSort, opLimit, oGroup, opSort2])
+                .toArray((error, docs) => {
+                    if (error) {
+                        return res.send(error);
+                    }
+                    return res.render('basic-table',
+                        { elements: docs, fields: fieldsToRender });
+                });
             client.close();
         });
 })
 
 
 app.get('/get', (req, res) => {
-    var fieldsToRender = ['Name','Rank']
+    var fieldsToRender = ['Name', 'Rank']
     mongoClient.connect(uri,
         { useUnifiedTopology: true },
         (err, client) => {
@@ -70,19 +82,19 @@ app.get('/get', (req, res) => {
             const db = client.db('imdb');
             const collection = db.collection('imdb_denormalized');
             collection.find({ "Directors.Lastname": "Lucas", "Rank": { "$gt": 0.0 } })
-            .sort({"Rank":-1})
-            .toArray((error, docs) => {
-                if (error) {
-                    return res.send(error);
-                }
-                return res.render('basic-table',
-                    { elements: docs, fields: fieldsToRender });
-            });
+                .sort({ "Rank": -1 })
+                .toArray((error, docs) => {
+                    if (error) {
+                        return res.send(error);
+                    }
+                    return res.render('basic-table',
+                        { elements: docs, fields: fieldsToRender });
+                });
         });
 });
 
-app.get('/request/1', (req, res) => {
-    var fieldsToRender = ['Name','Rank','Directors.Firstname','Directors.Lastname']
+app.get('/test', (req, res) => {
+    var fieldsToRender = ['Name', 'Rank', 'Directors.Firstname', 'Directors.Lastname']
     mongoClient.connect(uri,
         { useUnifiedTopology: true },
         (err, client) => {
@@ -94,23 +106,23 @@ app.get('/request/1', (req, res) => {
             const db = client.db('imdb');
             const collection = db.collection('imdb_denormalized');
             //execute request
-            collection.find({"Directors.Firstname":"Sara","Directors.Lastname":"Botsford"})
-            .toArray((error, docs) => {
-                if (error) {
-                    return res.send(error);
-                }
-                return res.render('basic-table',
-                    { 
-                        elements: docs, 
-                        fields: fieldsToRender 
-                    });
-            });
+            collection.find({ "Directors.Firstname": "Sara", "Directors.Lastname": "Botsford" })
+                .toArray((error, docs) => {
+                    if (error) {
+                        return res.send(error);
+                    }
+                    return res.render('basic-table',
+                        {
+                            elements: docs,
+                            fields: fieldsToRender
+                        });
+                });
         });
 });
 
 
 app.get('/request/2', (req, res) => {
-    var fieldsToRender = ['Name','Rank','Firstname','Lastname']
+    var fieldsToRender = ['Name', 'Rank', 'Firstname', 'Lastname']
     mongoClient.connect(uri,
         { useUnifiedTopology: true },
         (err, client) => {
@@ -122,30 +134,31 @@ app.get('/request/2', (req, res) => {
             const db = client.db('imdb');
             const collection = db.collection('imdb_denormalized');
             //execute request
-            const opMatch = {'$match':{"Rank":{'$ne':0.0,'$lte':50}}};
-            const opUnwind = {'$unwind':"$Directors"};
-            const opGroup ={'$group':{'_id':"$Directors","avg_notes":{'$avg':"$Rank"},"nb":{'$sum':1}}};
-            const opSort = {'$sort':{"avg_notes":-1}};
+            const opMatch = { '$match': { "Rank": { '$ne': 0.0, '$lte': 50 } } };
+            const opUnwind = { '$unwind': "$Directors" };
+            const opGroup = { '$group': { '_id': "$Directors", "avg_notes": { '$avg': "$Rank" }, "nb": { '$sum': 1 } } };
+            const opSort = { '$sort': { "avg_notes": -1 } };
             const opLimit = { '$limit': 10 };
-            collection.aggregate([opMatch, opUnwind, opGroup,opLimit]).toArray((error, docs) => {
+            collection.aggregate([opMatch, opUnwind, opGroup, opLimit]).toArray((error, docs) => {
                 if (error) {
                     return res.send(error);
                 }
                 return res.render('basic-table',
-                    { 
-                        elements: docs, 
-                        fields: fieldsToRender 
+                    {
+                        elements: docs,
+                        fields: fieldsToRender
                     });
             });
         });
 });
 
-app.get('/request/3', (req, res) => {
-    var fieldsToRender = ['Name','Rank','Directors.Firstname','Directors.Lastname']
-    var genre = 'Action';
-    var proba = 90;
+app.get('/request3', (req, res) => {
+    var fieldsToRender = [['_id', 'firstname'], ['_id', 'lastname'], 'nb'];
     mongoClient.connect(uri,
-        { useUnifiedTopology: true },
+        {
+            useUnifiedTopology: true
+            //allowDiskUse: true
+        },
         (err, client) => {
             if (err) {
                 console.error(err);
@@ -155,19 +168,22 @@ app.get('/request/3', (req, res) => {
             const db = client.db('imdb');
             const collection = db.collection('imdb_denormalized');
             //execute request
-            const opUnwind = {'$unwind':"$Directors"};
-            const opMatch = {'$match':{}}
-            collection.find({"Directors.Firstname":"Sara","Directors.Lastname":"Botsford"})
-            .toArray((error, docs) => {
-                if (error) {
-                    return res.send(error);
-                }
-                return res.render('basic-table',
-                    { 
-                        elements: docs, 
-                        fields: fieldsToRender 
-                    });
-            });
+            const opUnwind = { $unwind: "$Roles" };
+            const opSort = { $sort: { "Rank": -1 } };
+            const opLimit = { $limit: 100000 }
+            const opGroup = { $group: { _id: { "firstname": "$Roles.Actor.Firstname", "lastname": "$Roles.Actor.Lastname" }, "nb": { $sum: 1 } } };
+            const opSort2 = { $sort: { "nb": -1 } };
+            collection.aggregate([opUnwind, opSort, opLimit, opGroup, opSort2])
+                .toArray((error, docs) => {
+                    if (error) {
+                        return res.send(error);
+                    }
+                    return res.render('custom-table1',
+                        {
+                            elements: docs,
+                            fields: fieldsToRender
+                        });
+                });
         });
 });
 
